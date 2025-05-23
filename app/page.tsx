@@ -1,6 +1,7 @@
 "use client"
 import { useState } from "react"
 import { Search, Newspaper, MapPin, Loader2 } from "lucide-react"
+import { it } from "node:test"
 
 export default function Home() {
   const [category, setCategory] = useState("")
@@ -11,6 +12,7 @@ export default function Home() {
     urlToImage?: string
     title?: string
     description?: string
+    url: string
   }
   const [news, setNews] = useState<NewsItem[]>([])
 
@@ -42,6 +44,10 @@ export default function Home() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const redirectToPage = async (url: string) => {
+    window.location.href = url
   }
 
   return (
@@ -106,7 +112,7 @@ export default function Home() {
             <div className="news-content">
               <h2 className="news-title">{item.title || "No Title"}</h2>
               <p className="news-description">{item.description || "No Description"}</p>
-              <button className="read-more-button">Read More</button>
+              <a href={item.url} target="_blank" rel="noopener noreferrer" className="read-more-button">Read More</a>
             </div>
           </div>
         ))}
