@@ -26,7 +26,7 @@ export default function Home() {
     setIsLoading(true)
 
     try {
-      const response = await fetch("https://localhost:8000/getnews", {
+      const response = await fetch("http://localhost:8000/api/getnews", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ category, location }),
@@ -37,7 +37,8 @@ export default function Home() {
       }
 
       const data = await response.json()
-      setNews(data)
+      console.log(data.allnews)
+      setNews(data.allnews || [])
     } catch (error) {
       console.error("Failed to fetch news:", error)
       setError("Failed to fetch news. Please try again.")
