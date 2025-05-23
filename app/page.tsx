@@ -14,9 +14,15 @@ export default function Home() {
   }
   const [news, setNews] = useState<NewsItem[]>([])
 
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleSearch()
+    }
+  }
+
   const handleSearch = async () => {
-    if (!category && !location) {
-      setError("Please enter a category or location")
+    if (!category.trim() && !location.trim()) {
+      setError("Please enter a category or location to search")
       return
     }
 
@@ -61,6 +67,7 @@ export default function Home() {
               placeholder="Enter category..."
               value={category}
               onChange={(e) => setCategory(e.target.value)}
+              onKeyPress={handleKeyPress}
               className="search-input"
             />
           </div>
@@ -72,6 +79,7 @@ export default function Home() {
               placeholder="Enter location..."
               value={location}
               onChange={(e) => setLocation(e.target.value)}
+              onKeyPress={handleKeyPress}
               className="search-input"
             />
           </div>
