@@ -7,14 +7,12 @@ export default function Home() {
   const [location, setLocation] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
-  const [news, setNews] = useState([
-    {
-      urlToImage:
-        "https://media.istockphoto.com/id/814423752/photo/eye-of-model-with-colorful-art-make-up-close-up.jpg?s=612x612&w=0&k=20&c=l15OdMWjgCKycMMShP8UK94ELVlEGvt7GmB_esHWPYE=",
-      title: "Sample News",
-      description: "This is a sample description.",
-    },
-  ])
+  type NewsItem = {
+    urlToImage?: string
+    title?: string
+    description?: string
+  }
+  const [news, setNews] = useState<NewsItem[]>([])
 
   const handleSearch = async () => {
     if (!category && !location) {
