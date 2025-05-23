@@ -1,95 +1,118 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+"use client"
+import { useState } from "react"
+import { Search, Newspaper, MapPin, Loader2 } from "lucide-react"
 
 export default function Home() {
-  return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>app/page.tsx</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [category, setCategory] = useState("")
+  const [location, setLocation] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState("")
+  const [news, setNews] = useState([
+    {
+      urlToImage:
+        "https://media.istockphoto.com/id/814423752/photo/eye-of-model-with-colorful-art-make-up-close-up.jpg?s=612x612&w=0&k=20&c=l15OdMWjgCKycMMShP8UK94ELVlEGvt7GmB_esHWPYE=",
+      title: "Sample News",
+      description: "This is a sample description.",
+    },
+  ])
 
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+  const handleSearch = async () => {
+    if (!category && !location) {
+      setError("Please enter a category or location")
+      return
+    }
+
+    setError("")
+    setIsLoading(true)
+
+    try {
+      const response = await fetch("https://localhost:8000/getnews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ category, location }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch news")
+      }
+
+      const data = await response.json()
+      setNews(data)
+    } catch (error) {
+      console.error("Failed to fetch news:", error)
+      setError("Failed to fetch news. Please try again.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  return (
+    <main className="news-container">
+      <div className="hero-section">
+        <Newspaper className="hero-icon" />
+        <h1 className="heading">News Finder</h1>
+        <p className="subheading">Discover the latest news by category and location</p>
+      </div>
+
+      <div className="search-container">
+        <div className="input-group">
+          <div className="input-wrapper">
+            <Newspaper className="input-icon" />
+            <input
+              type="text"
+              placeholder="Enter category..."
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="search-input"
             />
-            Deploy now
-          </a>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
+          </div>
+
+          <div className="input-wrapper">
+            <MapPin className="input-icon" />
+            <input
+              type="text"
+              placeholder="Enter location..."
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              className="search-input"
+            />
+          </div>
+
+          <button onClick={handleSearch} className="search-button" disabled={isLoading}>
+            {isLoading ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <>
+                <Search className="button-icon" />
+                Search
+              </>
+            )}
+          </button>
         </div>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+
+        {error && <p className="error-message">{error}</p>}
+      </div>
+
+      <div className="news-display">
+        {news.map((item, index) => (
+          <div className="news-card" key={index}>
+            <div className="card-image-container">
+              {item.urlToImage ? (
+                <img src={item.urlToImage || "/placeholder.svg"} alt="news" className="news-image" />
+              ) : (
+                <div className="placeholder-image">
+                  <Newspaper size={48} />
+                </div>
+              )}
+            </div>
+            <div className="news-content">
+              <h2 className="news-title">{item.title || "No Title"}</h2>
+              <p className="news-description">{item.description || "No Description"}</p>
+              <button className="read-more-button">Read More</button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </main>
+  )
 }
