@@ -37,7 +37,6 @@ export default function Home() {
       }
 
       const data = await response.json()
-      console.log(data.allnews)
       setNews(data.allnews || [])
     } catch (error) {
       console.error("Failed to fetch news:", error)
