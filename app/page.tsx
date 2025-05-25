@@ -7,11 +7,14 @@ export default function Home() {
   const [location, setLocation] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+
   type NewsItem = {
     urlToImage?: string
     title?: string
     description?: string
+    url?: string
   }
+  
   const [news, setNews] = useState<NewsItem[]>([])
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -30,7 +33,7 @@ export default function Home() {
     setIsLoading(true)
 
     try {
-      const response = await fetch("http://localhost:8000/api/getnews", {
+      const response = await fetch("http://localhost:8000/api/google-search-api", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ category, location }),
@@ -41,12 +44,25 @@ export default function Home() {
       }
 
       const data = await response.json()
-      setNews(data.allnews || [])
+      console.log("API Response:", data)
+      
+      const newsData = data.result || data.allnews || data.articles || data.news || []
+      setNews(newsData)
+      
+      if (newsData.length === 0) {
+        setError("No news found for your search criteria")
+      }
     } catch (error) {
       console.error("Failed to fetch news:", error)
       setError("Failed to fetch news. Please try again.")
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleReadMore = (url?: string) => {
+    if (url) {
+      window.open(url, '_blank', 'noopener,noreferrer')
     }
   }
 
@@ -99,26 +115,68 @@ export default function Home() {
         {error && <p className="error-message">{error}</p>}
       </div>
 
+      {/* Results Count */}
+      {news.length > 0 && (
+        <div className="results-header">
+          <h2 className="results-count">Found {news.length} news articles</h2>
+          <div className="results-divider"></div>
+        </div>
+      )}
+
       <div className="news-display">
         {news.map((item, index) => (
           <div className="news-card" key={index}>
             <div className="card-image-container">
               {item.urlToImage ? (
-                <img src={item.urlToImage || "/placeholder.svg"} alt="news" className="news-image" />
-              ) : (
-                <div className="placeholder-image">
-                  <Newspaper size={48} />
-                </div>
-              )}
+                <img 
+                  src={item.urlToImage} 
+                  alt={item.title || "News image"} 
+                  className="news-image"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    const placeholder = target.parentElement?.querySelector('.placeholder-image') as HTMLElement;
+                    if (placeholder) {
+                      placeholder.style.display = 'flex';
+                    }
+                  }}
+                />
+              ) : null}
+              <div className={`placeholder-image ${item.urlToImage ? 'hidden' : ''}`}>
+                <Newspaper size={48} />
+              </div>
             </div>
             <div className="news-content">
-              <h2 className="news-title">{item.title || "No Title"}</h2>
-              <p className="news-description">{item.description || "No Description"}</p>
-              <button className="read-more-button">Read More</button>
+              <h2 className="news-title">{item.title || "No Title Available"}</h2>
+              <p className="news-description">{item.description || "No description available"}</p>
+              <button 
+                className="read-more-button"
+                onClick={() => handleReadMore(item.url)}
+                disabled={!item.url}
+              >
+                Read More →
+              </button>
             </div>
           </div>
         ))}
       </div>
+
+      {/* Loading State */}
+      {isLoading && (
+        <div className="loading-state">
+          <Loader2 className="loading-spinner animate-spin" />
+          <p className="loading-text">Searching for news...</p>
+        </div>
+      )}
+
+      {/* No Results State */}
+      {!isLoading && news.length === 0 && !error && (category || location) && (
+        <div className="no-results-state">
+          <Newspaper className="no-results-icon" />
+          <h3 className="no-results-title">No News Found</h3>
+          <p className="no-results-text">Try different search terms or check your spelling.</p>
+        </div>
+      )}
     </main>
   )
 }
