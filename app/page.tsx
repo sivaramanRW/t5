@@ -8,6 +8,7 @@ export default function Home() {
   const [location, setLocation] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+  const [news_uuid, setNewsUuid] = useState("")
 
   type NewsItem = {
     urlToImage?: string
@@ -25,41 +26,55 @@ export default function Home() {
   }
 
   const handleSearch = async () => {
-    if (!category.trim() && !location.trim()) {
-      setError("Please enter a category or location to search")
-      return
-    }
-
-    setError("")
-    setIsLoading(true)
-
-    try {
-      const response = await fetch("http://localhost:8000/api/google-search-api", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ category, location }),
-      })
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch news")
-      }
-
-      const data = await response.json()
-      console.log("API Response:", data)
-      
-      const newsData = data.result || data.allnews || data.articles || data.news || []
-      setNews(newsData)
-      
-      if (newsData.length === 0) {
-        setError("No news found for your search criteria")
-      }
-    } catch (error) {
-      console.error("Failed to fetch news:", error)
-      setError("Failed to fetch news. Please try again.")
-    } finally {
-      setIsLoading(false)
-    }
+  if (!category.trim() && !location.trim()) {
+    setError("Please enter a category or location to search")
+    return
   }
+
+  setError("")
+  setIsLoading(true)
+
+  try {
+    const response = await fetch("http://localhost:8000/api/crawl-ai", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ category, location }),
+    })
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch news")
+    }
+
+    const data = await response.json()
+    console.log("API Responseeeeee:", data)
+
+    const uuid = data.uuid
+    setNewsUuid(uuid)
+
+    const news_response = await fetch("http://localhost:8000/api/get-news", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ news_uuid: uuid }),
+    })
+
+    if (!news_response.ok) {
+      throw new Error("Failed to fetch news")
+    }
+
+    const news_got = await news_response.json()
+
+    setNews(news_got)
+
+    if (news_got.length === 0) {
+      setError("No news found for your search criteria")
+    }
+  } catch (error) {
+    console.error("Failed to fetch news:", error)
+    setError("Failed to fetch news. Please try again.")
+  } finally {
+    setIsLoading(false)
+  }
+}
 
   const handleReadMore = (url?: string) => {
     if (url) {
