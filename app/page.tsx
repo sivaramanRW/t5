@@ -1,22 +1,21 @@
 "use client"
 import { useState } from "react"
-import { Search, Newspaper, MapPin, Loader2 } from "lucide-react"
-import { it } from "node:test"
+import { Search, Newspaper, MapPin, Loader2 } from 'lucide-react'
 
 export default function Home() {
   const [category, setCategory] = useState("")
   const [location, setLocation] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
-  const [news_uuid, setNewsUuid] = useState("")
+  const [newsUuid, setNewsUuid] = useState("")
+  const [currentIndex, setCurrentIndex] = useState(0)
 
   type NewsItem = {
-    urlToImage?: string
     title?: string
-    description?: string
-    url?: string
+    image_src?: string
+    url: string
   }
-  
+
   const [news, setNews] = useState<NewsItem[]>([])
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -26,59 +25,64 @@ export default function Home() {
   }
 
   const handleSearch = async () => {
-  if (!category.trim() && !location.trim()) {
-    setError("Please enter a category or location to search")
-    return
-  }
-
-  setError("")
-  setIsLoading(true)
-
-  try {
-    const response = await fetch("http://localhost:8000/api/crawl-ai", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ category, location }),
-    })
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch news")
+    if (!category.trim() && !location.trim()) {
+      setError("Please enter a category or location to search")
+      return
     }
 
-    const data = await response.json()
-    console.log("API Responseeeeee:", data)
+    setError("")
+    setIsLoading(true)
+    setNews([])
+    setCurrentIndex(0)
 
-    const uuid = data.uuid
-    setNewsUuid(uuid)
+    try {
+      const response = await fetch("http://localhost:8000/api/crawl-ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ category, location }),
+      })
 
-    const news_response = await fetch("http://localhost:8000/api/get-news", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ news_uuid: uuid }),
-    })
+      if (!response.ok) throw new Error("Failed to fetch news")
 
-    if (!news_response.ok) {
-      throw new Error("Failed to fetch news")
-    }
+      const data = await response.json()
+      const uuid = data.uuid
+      setNewsUuid(uuid)
 
-    const news_got = await news_response.json()
+      const news_response = await fetch("http://localhost:8000/api/get-news", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ news_uuid: uuid }),
+      })
 
-    setNews(news_got)
+      if (!news_response.ok) throw new Error("Failed to fetch news")
 
-    if (news_got.length === 0) {
-      setError("No news found for your search criteria")
-    }
-  } catch (error) {
-    console.error("Failed to fetch news:", error)
-    setError("Failed to fetch news. Please try again.")
-  } finally {
-    setIsLoading(false)
-  }
-}
+      const news_got = await news_response.json()
 
-  const handleReadMore = (url?: string) => {
-    if (url) {
-      window.open(url, '_blank', 'noopener,noreferrer')
+      const flatNews: NewsItem[] = []
+      news_got.forEach((group: any) => {
+        const url = group.url
+        group.articles.forEach((article: any) => {
+          // Only add articles that have valid image_src
+          if (article.image_src && article.image_src.trim() !== "") {
+            flatNews.push({
+              title: article.title,
+              image_src: article.image_src,
+              url: url,
+            })
+          }
+        })
+      })
+
+      setNews(flatNews)
+
+      if (flatNews.length === 0) {
+        setError("No images found for your search criteria")
+      }
+    } catch (error) {
+      console.error("Failed to fetch news:", error)
+      setError("Failed to fetch news. Please try again.")
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -103,7 +107,6 @@ export default function Home() {
               className="search-input"
             />
           </div>
-
           <div className="input-wrapper">
             <MapPin className="input-icon" />
             <input
@@ -115,67 +118,53 @@ export default function Home() {
               className="search-input"
             />
           </div>
-
-          <button onClick={handleSearch} className="search-button" disabled={isLoading}>
-            {isLoading ? (
-              <Loader2 className="animate-spin" />
-            ) : (
-              <>
-                <Search className="button-icon" />
-                Search
-              </>
-            )}
+          <button
+            onClick={handleSearch}
+            disabled={isLoading}
+            className="search-button"
+          >
+            {isLoading ? <Loader2 className="button-icon animate-spin" /> : <Search className="button-icon" />}
+            Search
           </button>
         </div>
-
         {error && <p className="error-message">{error}</p>}
       </div>
 
-      {/* Results Count */}
+      {/* Image Display Only */}
       {news.length > 0 && (
-        <div className="results-header">
-          <h2 className="results-count">Found {news.length} news articles</h2>
-          <div className="results-divider"></div>
+        <div className="image-showcase">
+          <img
+            src={news[currentIndex].image_src || "/placeholder.svg"}
+            alt="News image"
+            className="showcase-image"
+          />
+
+          {/* Navigation */}
+          {news.length > 1 && (
+            <div className="navigation-controls">
+              {currentIndex > 0 && (
+                <button
+                  onClick={() => setCurrentIndex(currentIndex - 1)}
+                  className="nav-button prev-button"
+                >
+                  ← Previous
+                </button>
+              )}
+              <span className="image-counter">
+                {currentIndex + 1} / {news.length}
+              </span>
+              {currentIndex < news.length - 1 && (
+                <button
+                  onClick={() => setCurrentIndex(currentIndex + 1)}
+                  className="nav-button next-button"
+                >
+                  Next →
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
-
-      <div className="news-display">
-        {news.map((item, index) => (
-          <div className="news-card" key={index}>
-            <div className="card-image-container">
-              {item.urlToImage ? (
-                <img 
-                  src={item.urlToImage} 
-                  alt={item.title || "News image"} 
-                  className="news-image"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                    const placeholder = target.parentElement?.querySelector('.placeholder-image') as HTMLElement;
-                    if (placeholder) {
-                      placeholder.style.display = 'flex';
-                    }
-                  }}
-                />
-              ) : null}
-              <div className={`placeholder-image ${item.urlToImage ? 'hidden' : ''}`}>
-                <Newspaper size={48} />
-              </div>
-            </div>
-            <div className="news-content">
-              <h2 className="news-title">{item.title || "No Title Available"}</h2>
-              <p className="news-description">{item.description || "No description available"}</p>
-              <button 
-                className="read-more-button"
-                onClick={() => handleReadMore(item.url)}
-                disabled={!item.url}
-              >
-                Read More →
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
 
       {/* Loading State */}
       {isLoading && (
@@ -185,11 +174,11 @@ export default function Home() {
         </div>
       )}
 
-      {/* No Results State */}
+      {/* No Results */}
       {!isLoading && news.length === 0 && !error && (category || location) && (
         <div className="no-results-state">
           <Newspaper className="no-results-icon" />
-          <h3 className="no-results-title">No News Found</h3>
+          <h3 className="no-results-title">No Images Found</h3>
           <p className="no-results-text">Try different search terms or check your spelling.</p>
         </div>
       )}
