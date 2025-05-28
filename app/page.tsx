@@ -58,20 +58,14 @@ export default function Home() {
 
       const news_got = await news_response.json()
 
-      const flatNews: NewsItem[] = []
-      news_got.forEach((group: any) => {
-        const url = group.url
-        group.articles.forEach((article: any) => {
-          // Only add articles that have valid image_src
-          if (article.image_src && article.image_src.trim() !== "") {
-            flatNews.push({
-              title: article.title,
-              image_src: article.image_src,
-              url: url,
-            })
-          }
-        })
-      })
+      // Process the new API response format
+      const flatNews: NewsItem[] = news_got
+        .filter((item: any) => item.img_url && item.img_url.trim() !== "")
+        .map((item: any) => ({
+          title: item.image_title,
+          image_src: item.image_base_64,
+          url: item.url,
+        }))
 
       setNews(flatNews)
 
@@ -130,7 +124,6 @@ export default function Home() {
         {error && <p className="error-message">{error}</p>}
       </div>
 
-      {/* Image Display Only */}
       {news.length > 0 && (
         <div className="image-showcase">
           <img
@@ -139,7 +132,6 @@ export default function Home() {
             className="showcase-image"
           />
 
-          {/* Navigation */}
           {news.length > 1 && (
             <div className="navigation-controls">
               {currentIndex > 0 && (
@@ -166,7 +158,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* Loading State */}
       {isLoading && (
         <div className="loading-state">
           <Loader2 className="loading-spinner animate-spin" />
@@ -174,7 +165,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* No Results */}
       {!isLoading && news.length === 0 && !error && (category || location) && (
         <div className="no-results-state">
           <Newspaper className="no-results-icon" />
