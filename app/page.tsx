@@ -1,6 +1,8 @@
 "use client"
 import { useState } from "react"
-import { Search, Newspaper, MapPin, Loader2 } from 'lucide-react'
+import type React from "react"
+
+import { Search, Newspaper, MapPin, Loader2, ChevronLeft, ChevronRight } from "lucide-react"
 
 export default function Home() {
   const [category, setCategory] = useState("")
@@ -112,11 +114,7 @@ export default function Home() {
               className="search-input"
             />
           </div>
-          <button
-            onClick={handleSearch}
-            disabled={isLoading}
-            className="search-button"
-          >
+          <button onClick={handleSearch} disabled={isLoading} className="search-button">
             {isLoading ? <Loader2 className="button-icon animate-spin" /> : <Search className="button-icon" />}
             Search
           </button>
@@ -126,19 +124,34 @@ export default function Home() {
 
       {news.length > 0 && (
         <div className="image-showcase">
-          <img
-            src={news[currentIndex].image_src || "/placeholder.svg"}
-            alt="News image"
-            className="showcase-image"
-          />
+          <div className="image-container">
+            {news.length > 1 && currentIndex > 0 && (
+              <button
+                onClick={() => setCurrentIndex(currentIndex - 1)}
+                className="arrow-button prev-arrow"
+                aria-label="Previous image"
+              >
+                <ChevronLeft className="arrow-icon" />
+              </button>
+            )}
+
+            <img src={news[currentIndex].image_src || "/placeholder.svg"} alt="News image" className="showcase-image" />
+
+            {news.length > 1 && currentIndex < news.length - 1 && (
+              <button
+                onClick={() => setCurrentIndex(currentIndex + 1)}
+                className="arrow-button next-arrow"
+                aria-label="Next image"
+              >
+                <ChevronRight className="arrow-icon" />
+              </button>
+            )}
+          </div>
 
           {news.length > 1 && (
             <div className="navigation-controls">
               {currentIndex > 0 && (
-                <button
-                  onClick={() => setCurrentIndex(currentIndex - 1)}
-                  className="nav-button prev-button"
-                >
+                <button onClick={() => setCurrentIndex(currentIndex - 1)} className="nav-button prev-button">
                   ← Previous
                 </button>
               )}
@@ -146,10 +159,7 @@ export default function Home() {
                 {currentIndex + 1} / {news.length}
               </span>
               {currentIndex < news.length - 1 && (
-                <button
-                  onClick={() => setCurrentIndex(currentIndex + 1)}
-                  className="nav-button next-button"
-                >
+                <button onClick={() => setCurrentIndex(currentIndex + 1)} className="nav-button next-button">
                   Next →
                 </button>
               )}
